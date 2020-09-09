@@ -153,6 +153,7 @@ if ($iszoommanager) {
 
 // Show recordings section if recordings exist or if user has edit capability and can add recordings.
 $recordings = $DB->get_records('zoom_meeting_recordings', array('zoomid' => $zoom->id), 'timecreated ASC');
+$recordinghtml = null;
 if ($iszoommanager || $recordings) {
     foreach ($recordings as $recording) {
         $recordingurl = new moodle_url('/mod/zoom/loadrecording.php', array('id' => $cm->id, 'recordingid' => $recording->id));

@@ -43,68 +43,30 @@ require_capability('mod/zoom:addinstance', $context);
 
 $params = array('id' => $cm->id, 'action' => $action);
 
-$strname = $zoom->name;
-$strtitle = get_string('recordings', 'mod_zoom');
-$PAGE->navbar->add($strtitle);
-$PAGE->set_title("$course->shortname: $strname");
-$PAGE->set_heading($course->fullname);
-$PAGE->set_pagelayout('incourse');
-
-echo $OUTPUT->header();
-echo $OUTPUT->heading($strname);
-echo $OUTPUT->heading($strtitle, 4);
-
 $formparams = array('course' => $course, 'cm' => $cm, 'modcontext' => $context);
 switch ($action) {
     case ACTION_ADD:
         $url = new moodle_url('/mod/zoom/recordings.php', $params);
         $PAGE->set_url($url);
-        $mform = new mod_zoom_recording_form($url, $formparams);
+        $service = new mod_zoom_webservice();
+        $recordingurls = $service->get_recording_url_list($zoom->meeting_id);
 
-        if ($mform->is_cancelled()) {
-            redirect(new moodle_url('/mod/zoom/view.php', array('id' => $cm->id)));
-        }
+        $now = time();
 
-        if ($formdata = $mform->get_data()) {
-            $now = time();
-
+        foreach ($recordingurls as $recordingurl) {
             $rec = new stdClass();
             $rec->zoomid = $zoom->id;
-            $rec->name = $formdata->name;
-            $rec->externalurl = $formdata->externalurl;
+            $rec->name = $zoom->name;
+            $rec->externalurl = $recordingurl;
             $rec->timecreated = $now;
             $rec->timemodified = $now;
             $rec->id = $DB->insert_record('zoom_meeting_recordings', $rec);
-
-            // Redirect back to meeting view.
-            redirect(new moodle_url('/mod/zoom/view.php', array('id' => $cm->id)));
-        }
-        break;
-    case ACTION_UPDATE:
-        $recordingid = required_param('recordingid', PARAM_INT);
-        $params['recordingid'] = $recordingid;
-        $url = new moodle_url('/mod/zoom/recordings.php', $params);
-        $PAGE->set_url($url);
-        $formparams['recordingid'] = $recordingid;
-        $mform = new mod_zoom_recording_form($url, $formparams);
-
-        if ($mform->is_cancelled()) {
-            redirect(new moodle_url('/mod/zoom/view.php', array('id' => $cm->id)));
         }
 
-        if ($formdata = $mform->get_data()) {
-            $now = time();
+        // TODO: is there a way to send back information to view.php to indicate that no recordings were found
+        // if we can do this, we should and on view.php
+        // we should show an error/warning message that there were no recordings found for that meeting.
 
-            $rec = new stdClass();
-            $rec->id = $recordingid;
-            $rec->name = $formdata->name;
-            $rec->externalurl = $formdata->externalurl;
-            $rec->timemodified = $now;
-            $DB->update_record('zoom_meeting_recordings', $rec);
-
-            // Redirect back to meeting view.
-            redirect(new moodle_url('/mod/zoom/view.php', array('id' => $cm->id)));
-        }
         break;
     case ACTION_DELETE:
         $recordingid = required_param('recordingid', PARAM_INT);
@@ -131,6 +93,4 @@ switch ($action) {
         exit;
 }
 
-$mform->display();
-
-echo $OUTPUT->footer();
+redirect(new moodle_url('/mod/zoom/view.php', array('id' => $cm->id)));

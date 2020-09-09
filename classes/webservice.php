@@ -693,4 +693,31 @@ class mod_zoom_webservice {
 
         return $uuid;
     }
+
+    /**
+     * Returns the download urls for the cloud recording if one exists on zoom for a particular meeting id.
+     * There can be more than one url for the same meeting if the host stops the recording in the middle
+     * of the meeting and then starts recording again without ending the meeting.
+     * 
+     * @link https://marketplace.zoom.us/docs/api-reference/zoom-api/cloud-recording/recordingget
+     * @param string $meetingid The string meeting ID.
+     * @return string Return the urls for the cloud recording download.
+     */
+    public function get_recording_url_list($meetingid) {
+        $url = 'meetings/' . $meetingid . '/recordings';
+        try {
+            $response = $this->_make_call($url);
+            $recordingurls = [];
+            foreach ($response->recording_files as $rec) {
+                if (!empty($rec->play_url)) {
+                    $recordingurls[] = $rec->play_url;
+                }
+            }
+            return $recordingurls;
+        } catch (moodle_exception $error) {
+            // just return an empty array
+            // TODO: we could do some more meaningful error checking here if we need to
+        }
+        return [];
+    }
 }
